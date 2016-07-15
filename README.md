@@ -13,6 +13,7 @@ Changes
 * All api add XHOOK_FUNC(defined as inline) macro, for inline functions
 * Remove class CXHookDis's three s_* members, instead of three static getter methods
 * Remove class XHOOK_IA64_BUNDLE's s_* member, instead of static getter method
+* Change xhook.cpp ASSERT macro to XHOOK_ASSERT
 
 Usage
 --------

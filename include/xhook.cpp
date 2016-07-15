@@ -18,8 +18,8 @@
 #error Must define one of XHOOKS_32BIT or XHOOKS_64BIT
 #endif
 
-#undef ASSERT
-#define ASSERT(x)
+#undef XHOOK_ASSERT
+#define XHOOK_ASSERT(x)
 
 #include <stddef.h>
 #if (_MSC_VER < 1299)
@@ -944,7 +944,7 @@ PBYTE CXHookDis::CopyBytesJump(REFCOPYENTRY pEntry, PBYTE pbDst, PBYTE pbSrc)
 		return pbSrc + 2;
 	}
 
-	ASSERT(pbSrc[0] >= 0x70 && pbSrc[0] <= 0x7f);
+	XHOOK_ASSERT(pbSrc[0] >= 0x70 && pbSrc[0] <= 0x7f);
 
 	pbDst[0] = 0x0f;
 	pbDst[1] = 0x80 | (pbSrc[0] & 0xf);
@@ -978,7 +978,7 @@ PBYTE CXHookDis::AdjustTarget(PBYTE pbDst, PBYTE pbSrc, LONG cbOp,
 		nOldOffset = (LONG_PTR)*(LONG_PTR*&)pvTargetAddr;
 		break;
 	default:
-		ASSERT(!"cbTargetSize is invalid.");
+		XHOOK_ASSERT(!"cbTargetSize is invalid.");
 		break;
 	}
 
@@ -1008,7 +1008,7 @@ PBYTE CXHookDis::AdjustTarget(PBYTE pbDst, PBYTE pbSrc, LONG cbOp,
 		*(LONG_PTR*&)pvTargetAddr = (LONG_PTR)nNewOffset;
 		break;
 	}
-	ASSERT(pbDst + cbOp + nNewOffset == pbTarget);
+	XHOOK_ASSERT(pbDst + cbOp + nNewOffset == pbTarget);
 	return pbTarget;
 }
 
@@ -1017,7 +1017,7 @@ PBYTE CXHookDis::Invalid(REFCOPYENTRY pEntry, PBYTE pbDst, PBYTE pbSrc)
 {
 	(void)pbDst;
 	(void)pEntry;
-	ASSERT(!"Invalid Instruction");
+	XHOOK_ASSERT(!"Invalid Instruction");
 	return pbSrc + 1;
 }
 
@@ -1130,12 +1130,12 @@ BOOL CXHookDis::SanityCheckSystem()
 		REFCOPYENTRY pEntry = &rceCopyTable[n];
 
 		if (n != pEntry->nOpcode) {
-			ASSERT(n == pEntry->nOpcode);
+			XHOOK_ASSERT(n == pEntry->nOpcode);
 			return FALSE;
 		}
 	}
 	if (rceCopyTable[256].pfCopy != NULL) {
-		ASSERT(!"Missing end marker.");
+		XHOOK_ASSERT(!"Missing end marker.");
 		return FALSE;
 	}
 
@@ -1144,12 +1144,12 @@ BOOL CXHookDis::SanityCheckSystem()
 		REFCOPYENTRY pEntry = &rceCopyTable0F[n];
 
 		if (n != pEntry->nOpcode) {
-			ASSERT(n == pEntry->nOpcode);
+			XHOOK_ASSERT(n == pEntry->nOpcode);
 			return FALSE;
 		}
 	}
 	if (rceCopyTable0F[256].pfCopy != NULL) {
-		ASSERT(!"Missing end marker.");
+		XHOOK_ASSERT(!"Missing end marker.");
 		return FALSE;
 	}
 
@@ -2291,7 +2291,7 @@ BYTE CXHookDis::CopyMiscellaneous16(BYTE* pSource, BYTE* pDest)
 	// If-Then Instruction (IT)
 	if ((instruction >> 8 == 0xBF) && (instruction & 0xF)) { //(10111111xxxx(mask != 0b0000))
 		// ToDo: Implement IT handler
-		ASSERT(false);
+		XHOOK_ASSERT(false);
 		return sizeof(USHORT);
 	}
 
@@ -2332,7 +2332,7 @@ BYTE CXHookDis::CopyConditionalBranchOrOther16(BYTE* pSource, BYTE* pDest)
 
 		// First, reuse the existing conditional branch to, if successful, branch down to a 'long branch' that we will emit below
 		USHORT newInstruction = EncodeBranch8(*(PUSHORT)(pSource), 0); // Due to the size of c_PCAdjust a zero-length branch moves 4 bytes forward, past the following unconditional branch
-		ASSERT(newInstruction);
+		XHOOK_ASSERT(newInstruction);
 		PUSHORT pDstInst = (PUSHORT)(pDest);
 		*pDstInst++ = newInstruction;
 
@@ -2346,7 +2346,7 @@ BYTE CXHookDis::CopyConditionalBranchOrOther16(BYTE* pSource, BYTE* pDest)
 		// Finally, encode and emit the unconditional branch that will be used to branch past the 'long branch' if the initial condition was not met
 		Branch11 branch11 = { 0x00, 0x1C };
 		newInstruction = EncodeBranch11(*(DWORD*)(&branch11), longBranchSize - c_PCAdjust + sizeof(USHORT));
-		ASSERT(newInstruction);
+		XHOOK_ASSERT(newInstruction);
 		*pUnconditionalBranchInstruction = newInstruction;
 
 		// Compute the extra space needed for the branch sequence
@@ -2574,7 +2574,7 @@ BYTE CXHookDis::CopyBranchOrMiscellaneous32(BYTE* pSource, BYTE* pDest)
 		instruction = EncodeBranch20(GetLongInstruction(pSource), 2);
 		// Due to the size of c_PCAdjust a two-length branch moves 6 bytes forward,
 		// past the following unconditional branch
-		ASSERT(instruction);
+		XHOOK_ASSERT(instruction);
 		EmitLongInstruction(pDstInst, instruction);
 
 		// Next, prepare to insert an unconditional branch that will be hit
@@ -2591,7 +2591,7 @@ BYTE CXHookDis::CopyBranchOrMiscellaneous32(BYTE* pSource, BYTE* pDest)
 		// to branch past the 'long branch' if the initial condition was not met
 		Branch11 branch11 = { 0x00, 0x1C };
 		instruction = EncodeBranch11(*(DWORD*)(&branch11), longBranchSize - c_PCAdjust + sizeof(USHORT));
-		ASSERT(instruction);
+		XHOOK_ASSERT(instruction);
 		*pUnconditionalBranchInstruction = static_cast<USHORT>(instruction);
 
 		// Compute the extra space needed for the instruction
@@ -2628,7 +2628,7 @@ BYTE CXHookDis::CopyBranchOrMiscellaneous32(BYTE* pSource, BYTE* pDest)
 	if ((instruction & 0xFFF0FFFF) == 0xF3C08F00) {
 		// BXJ 111100111100xxxx1000111100000000
 		// BXJ switches to Jazelle mode, which is not supported
-		ASSERT(false);
+		XHOOK_ASSERT(false);
 	}
 
 	if ((instruction & 0xFFFFFF00) == 0xF3DE8F00) {
@@ -2832,7 +2832,7 @@ BYTE CXHookDis::BeginCopy32(BYTE* pSource, BYTE* pDest)
 			// The source register is PC
 			if ((instruction & 0xF0000) == 0xF0000) {
 				// ToDo: If the source register is PC, what should we do?
-				ASSERT(false);
+				XHOOK_ASSERT(false);
 			}
 
 			// If either target registers are PC
@@ -2885,7 +2885,7 @@ BYTE CXHookDis::BeginCopy32(BYTE* pSource, BYTE* pDest)
 	}
 
 	// Unhandled instruction; should never make it this far
-	ASSERT(false);
+	XHOOK_ASSERT(false);
 	return PureCopy32(pSource, pDest);
 }
 
